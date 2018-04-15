@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">微信一键加好友助手</string>
+    <string name="accessibility_description">自动添加好友服务</string>
+    <string name="stop_add_friends">停止添加好友</string>
+    <string name="start_add_frindes_add_send_message">开始添加好友并发送信息</string>
+</resources>

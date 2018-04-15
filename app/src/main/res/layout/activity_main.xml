@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:background="#8c8cfc"
+    tools:context="com.example.lydia.wechatautoaddfriends.MainActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:text="发送语句"
+        android:textStyle="bold"
+        android:textSize="20dp" />
+
+    <EditText
+        android:id="@+id/message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:letterSpacing="0.5"
+        android:textAlignment="textStart"
+        android:textSize="20dp"
+        android:textStyle="bold"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/open_settings_button_background"
+        android:onClick="sendClick"
+        android:padding="10dp"
+        android:text="@string/start_add_frindes_add_send_message"
+        android:textColor="#000000" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:background="@drawable/open_settings_button_background"
+        android:onClick="settingsClick"
+        android:padding="10dp"
+        android:text="点击前往开启自动添加友好服务"
+        android:textColor="#000000" />
+
+</LinearLayout>
