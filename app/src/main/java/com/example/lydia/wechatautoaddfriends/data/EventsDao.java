@@ -13,17 +13,15 @@ import java.util.List;
  */
 
 @Dao
-public interface EventsDao {
-    @Insert
-    public void insertEventList(List<NotificationEvent> eventList);
+public abstract class EventsDao {
 
     @Insert
-    public void insertEvent(NotificationEvent... events);
+    public abstract void insertEvent(NotificationEvent... events);
 
     @Delete
-    public void deleteNotificationEvents(NotificationEvent... events);
+    public abstract void deleteNotificationEvents(NotificationEvent... events);
 
     @Query("SELECT  * FROM NotificationEvent")
-    public List<NotificationEvent> searchAllEvents();
+    public abstract List<NotificationEvent> searchAllEvents();
 
 }

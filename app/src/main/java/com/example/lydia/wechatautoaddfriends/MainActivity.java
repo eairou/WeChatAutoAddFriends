@@ -35,11 +35,11 @@ public class MainActivity extends AppCompatActivity implements TextWatcher{
 
     public void sendClick(View view){
         Button button = (Button) view;
-        if (button.getText() == getResources().getText(R.string.start_add_frindes_add_send_message)){
+        if (button.getText() == getResources().getText(R.string.start_add_friends_and_send_message)){
             button.setText(R.string.stop_add_friends);
             AutoAddFriendsService.startAddFriends(true);
         }else {
-            button.setText(R.string.start_add_frindes_add_send_message);
+            button.setText(R.string.start_add_friends_and_send_message);
             AutoAddFriendsService.startAddFriends(false);
         }
     }

@@ -21,7 +21,18 @@ import android.widget.Toast;
 import com.example.lydia.wechatautoaddfriends.data.NotificationEvent;
 import com.example.lydia.wechatautoaddfriends.data.NotificationEventsDataBase;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
+
+import rx.Observable;
+import rx.Observer;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by lydia on 2018/4/13.
@@ -39,27 +50,23 @@ public class AutoAddFriendsService extends AccessibilityService {
 
     private static String MESSAGE = "你好，我是丫丫鞋业，欢迎加入。如果有需要的话，可以去我朋友圈看看，各式高仿名牌，质量保证，价格实惠。";
 
-    private List<NotificationEvent> mEventsList;
-    private static final String EVENTS_FILE_NAME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/events_list.txt";
-
-    private boolean isFirstOpenNotification = true;
     private AccessibilityNodeInfo editText;
 
     //锁屏、唤醒相关
-    private KeyguardManager km;
-    private KeyguardManager.KeyguardLock kl;
-    private PowerManager pm;
-    private PowerManager.WakeLock wl = null;
-    private boolean enableKeyguard = false;
-    private boolean enablePower = false;
+    private static KeyguardManager km;
+    private static KeyguardManager.KeyguardLock kl;
+    private static PowerManager pm;
+    private static PowerManager.WakeLock wl = null;
+    private static boolean enableKeyguard = false;
+    private static boolean enablePower = false;
 
-    private NotificationEventsDataBase dataBase;
+    private static NotificationEventsDataBase dataBase;
 
-    private NotificationEvent mCurrentEvent;
+    private static final String SYNC_STRING = "sync_string";
 
-    private boolean mAddFriendsServiceConnected = false;
 
     private static boolean ADD_FRIENDS = false;
+    private static boolean START_ADD = false;
 
 
     public AutoAddFriendsService(){
@@ -67,7 +74,7 @@ public class AutoAddFriendsService extends AccessibilityService {
     }
 
     @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
+    public void onAccessibilityEvent(final AccessibilityEvent event) {
         if (!event.getPackageName().equals(WECHAT_PACKAGENAME)) {
             return;
         }
@@ -80,21 +87,47 @@ public class AutoAddFriendsService extends AccessibilityService {
                     String str = text.toString();
                     if (!str.isEmpty())
                         if (str.contains(REQUST_ADD_FRIEND_TEXT_KEY)) {
-                            // 模拟打开通知消息
-                            final NotificationEvent notificationEvent = new NotificationEvent(event.hashCode());
-                            notificationEvent.setEvent(event);
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    dataBase.eventsDao().insertEvent(notificationEvent);
-                                }
-                            }).start();
+
+                            Observable.just(event)
+                                    .subscribeOn(AndroidSchedulers.mainThread())
+                                    .observeOn(Schedulers.io())
+                                    .subscribe(new Observer<AccessibilityEvent>() {
+                                        @Override
+                                        public void onCompleted() {
+
+                                        }
+
+                                        @Override
+                                        public void onError(Throwable e) {
+
+                                        }
+
+                                        @Override
+                                        public void onNext(AccessibilityEvent event) {
+                                            ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
+                                            ObjectOutputStream objectOutputStream = null;
+                                            try {
+                                                objectOutputStream = new ObjectOutputStream(arrayOutputStream);
+
+                                                objectOutputStream.writeObject(event);
+                                                objectOutputStream.flush();
+                                                byte[] data=arrayOutputStream.toByteArray();
+                                                NotificationEvent notificationEvent = new NotificationEvent();
+                                                notificationEvent.setId(event.hashCode());
+                                                notificationEvent.setBytes(data);
+                                                synchronized (SYNC_STRING) {
+                                                    dataBase.eventsDao().insertEvent(notificationEvent);
+                                                }
+                                            } catch (IOException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                    });
                         }
                 }
                 break;
             case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
-                // 添加好友流程开始
-                if (!mEventsList.isEmpty()) {
+                if (ADD_FRIENDS){
                     addFriends();
                 }
                 break;
@@ -104,6 +137,99 @@ public class AutoAddFriendsService extends AccessibilityService {
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onInterrupt() {
+        START_ADD = false;
+        km = null;
+        kl = null;
+        pm = null;
+        wl = null;
+        dataBase = null;
+        Toast.makeText(this, "添加好友服务中断", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onServiceConnected() {
+        super.onServiceConnected();
+        //获取电源管理器对象
+        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        //得到键盘锁管理器对象
+        km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+
+        kl = km.newKeyguardLock("unLock");
+
+        dataBase = Room.databaseBuilder(getApplicationContext(), NotificationEventsDataBase.class, "notification_events.db").build();
+        Toast.makeText(this, "添加好友服务连接成功", Toast.LENGTH_SHORT).show();
+    }
+
+    public static void setMessage(String message) {
+        MESSAGE = message;
+    }
+
+    public static void startAddFriends(final boolean add) {
+        if (dataBase == null){
+            return;
+        }
+        START_ADD = add;
+        Observable.create(new Observable.OnSubscribe<AccessibilityEvent>() {
+            @Override
+            public void call(Subscriber<? super AccessibilityEvent> subscriber) {
+                synchronized (SYNC_STRING) {
+                    while (true && START_ADD) {
+                        List<NotificationEvent> eventsList = dataBase.eventsDao().searchAllEvents();
+                        NotificationEvent notificationEvent = eventsList.get(eventsList.size() - 1);
+                        if (notificationEvent != null){
+                            byte[] data = notificationEvent.getBytes();
+                            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+                            ObjectInputStream objectInputStream;
+                            try {
+                                objectInputStream = new ObjectInputStream(byteArrayInputStream);
+                                AccessibilityEvent event = (AccessibilityEvent) (objectInputStream.readObject());
+                                subscriber.onNext(event);
+                                byteArrayInputStream.close();
+                                objectInputStream.close();
+                                dataBase.eventsDao().deleteNotificationEvents(notificationEvent);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            } catch (ClassNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers
+        .mainThread())
+        .subscribe(new Subscriber<AccessibilityEvent>() {
+            @Override
+            public void onCompleted() {
+
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onNext(AccessibilityEvent event) {
+                if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
+                    wakeAndUnlock();
+                    Notification notification = (Notification) event.getParcelableData();
+                    PendingIntent pendingIntent = notification.contentIntent;
+                    try {
+                        pendingIntent.send();
+                        ADD_FRIENDS = true;
+                    } catch (PendingIntent.CanceledException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
@@ -138,103 +264,34 @@ public class AutoAddFriendsService extends AccessibilityService {
             List<AccessibilityNodeInfo> sendButtonList = nodeInfo.findAccessibilityNodeInfosByText(SEND_BUTTON_TEXT_KEY);
             if (!sendButtonList.isEmpty()) {
                 sendButtonList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                dataBase.eventsDao().deleteNotificationEvents(mCurrentEvent);
-                openNotification();
             }
         }
 
     }
 
-    private Thread mOpenOperationThread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-            Log.e(TAG, "thread run!");
-            mEventsList = dataBase.eventsDao().searchAllEvents();
-            while (true){
-                if (ADD_FRIENDS){
-                    Log.e(TAG, "thread run: add friends!");
-                    openNotification();
-                }
-            }
-        }
-    });
-
 
     //通过组件名递归查找编辑框
-    private void findEditTextByClassName(AccessibilityNodeInfo nodeInfo, String ClassName) {
-        if (ClassName.equals(nodeInfo.getClassName())) {
+    private void findEditTextByClassName(AccessibilityNodeInfo nodeInfo, String className) {
+        if (className.equals(nodeInfo.getClassName().toString())) {
             editText = nodeInfo;
             return;
         }
         for (int i = 0; i < nodeInfo.getChildCount(); i++) {
-            findEditTextByClassName(nodeInfo.getChild(i), ClassName);
+            findEditTextByClassName(nodeInfo.getChild(i), className);
         }
-    }
-
-    /**
-     * 模拟打开加好友通知消息栏
-     */
-    private void openNotification() {
-        mEventsList = dataBase.eventsDao().searchAllEvents();
-        kl = km.newKeyguardLock("unLock");
-        if (mEventsList.isEmpty()) {
-            return;
-        }
-        mCurrentEvent = mEventsList.get(mEventsList.size() - 1);
-        AccessibilityEvent event = mCurrentEvent.event;
-        if (event.getParcelableData() != null && event.getParcelableData() instanceof Notification) {
-            Notification notification = (Notification) event.getParcelableData();
-            PendingIntent pendingIntent = notification.contentIntent;
-            try {
-                pendingIntent.send();
-            } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    @Override
-    public void onInterrupt() {
-        if(mOpenOperationThread.isAlive()) {
-            mOpenOperationThread.interrupt();
-        }
-        Toast.makeText(this, "添加好友服务中断", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    protected void onServiceConnected() {
-        super.onServiceConnected();
-        //获取电源管理器对象
-        pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        //得到键盘锁管理器对象
-        km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-
-        kl = km.newKeyguardLock("unLock");
-
-        dataBase = Room.databaseBuilder(getApplicationContext(), NotificationEventsDataBase.class, "notification_events.db").build();
-        mOpenOperationThread.start();
-        Toast.makeText(this, "添加好友服务连接成功", Toast.LENGTH_SHORT).show();
-    }
-
-    public static void setMessage(String message) {
-        MESSAGE = message;
-    }
-
-    public static void startAddFriends(boolean add) {
-        ADD_FRIENDS = add;
     }
 
     /**
      * 唤醒和解锁相关
      */
-    private void wakeAndUnlock() {
-        if (mEventsList.isEmpty()){
-            if (enablePower) {
-                wl.release();
-            }
-            if (enableKeyguard) {
-                kl.reenableKeyguard();
-            }
+    private static void wakeAndUnlock() {
+
+        if (enablePower) {
+            wl.release();
+        }
+
+        if (enableKeyguard) {
+            kl.reenableKeyguard();
         }
 
         if (!pm.isScreenOn()) {

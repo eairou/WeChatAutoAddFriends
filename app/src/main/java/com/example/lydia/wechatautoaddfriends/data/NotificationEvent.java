@@ -17,18 +17,23 @@ public class NotificationEvent {
     @PrimaryKey
     public int id;
 
-    @Ignore
-    public AccessibilityEvent event;
+    @ColumnInfo(typeAffinity = ColumnInfo.BLOB)
+    private byte[] bytes;
 
-    public NotificationEvent(int id){
+
+    public int getId() {
+        return id;
+    }
+
+    public byte[] getBytes() {
+        return bytes;
+    }
+
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
+    }
+
+    public void setId(int id) {
         this.id = id;
-    }
-
-    public void setEvent(AccessibilityEvent event){
-        this.event = event;
-    }
-
-    public AccessibilityEvent getEvent(){
-        return this.event;
     }
 }
