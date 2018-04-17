@@ -1,61 +1,58 @@
 package com.example.lydia.wechatautoaddfriends;
 
 import android.content.Intent;
+import android.os.Build;
+import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements TextWatcher{
-    private static final String TAG = "MainActivity";
 
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
+    private static final int FLOAT_WINDOW_REQUST_CODE = 1001;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        EditText editText = findViewById(R.id.message);
-        editText.addTextChangedListener(this);
+        getPermissionToShowFloatWindow();
     }
 
+    private void startFloatViewService(){
+        Intent intent = new Intent(getApplicationContext(), AddFriendsFloatViewService.class);
+        startService(intent);
+        finish();
+    }
 
-    public void settingsClick(View view){
-        try {
-            //打开系统设置中辅助功能
-            Intent intent = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
-            startActivity(intent);
-            Toast.makeText(MainActivity.this, "找到添加好友服务，然后开启服务即可", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            e.printStackTrace();
+    /**
+     * Tpv loy.ouyang: request permission for showing float window
+     */
+    private void getPermissionToShowFloatWindow(){
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (!Settings.canDrawOverlays(this)) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                startActivityForResult(intent, FLOAT_WINDOW_REQUST_CODE);
+            } else {
+                startFloatViewService();
+            }
+        } else {
+            startFloatViewService();
         }
     }
 
-    public void sendClick(View view){
-        Button button = (Button) view;
-        if (button.getText() == getResources().getText(R.string.start_add_friends_and_send_message)){
-            button.setText(R.string.stop_add_friends);
-            AutoAddFriendsService.startAddFriends(true);
-        }else {
-            button.setText(R.string.start_add_friends_and_send_message);
-            AutoAddFriendsService.startAddFriends(false);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FLOAT_WINDOW_REQUST_CODE) {
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (!Settings.canDrawOverlays(this)) {
+                    Toast.makeText(getApplicationContext(), getBaseContext().getResources().getString(R.string.aler_window_permission_failed), Toast.LENGTH_SHORT).show();
+                } else {
+                    startFloatViewService();
+                }
+            }
         }
-    }
-
-    @Override
-    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
     }
 
-    @Override
-    public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-    }
-
-    @Override
-    public void afterTextChanged(Editable s) {
-        AutoAddFriendsService.setMessage(s.toString());
-    }
 }
