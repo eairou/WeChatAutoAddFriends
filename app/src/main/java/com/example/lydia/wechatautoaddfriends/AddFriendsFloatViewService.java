@@ -2,6 +2,8 @@ package com.example.lydia.wechatautoaddfriends;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -19,6 +21,8 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -28,7 +32,7 @@ import android.widget.Toast;
  */
 
 @SuppressLint("Registered")
-public class AddFriendsFloatViewService extends Service implements View.OnClickListener {
+public class AddFriendsFloatViewService extends Service implements View.OnClickListener, View.OnLongClickListener{
     private final static String TAG = "AddFriendsFloatViewService";
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams wmParams;
@@ -44,6 +48,9 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
     ///TPV loy.ouyang: real position of float view
     private float mX;
     private float mY;
+
+    private static final int mPopWindowWidth = 120;
+    private static final int mPopWindowHeight = 54;
 
 
     @Override
@@ -78,6 +85,7 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
         settingsBtn.setOnClickListener(this);
 
         mEditText = mFloatView.findViewById(R.id.message);
+        mEditText.setOnLongClickListener(this);
 
         ///TPV loy.ouyang: init window params
         if (Build.VERSION.SDK_INT >= 26) {
@@ -190,17 +198,33 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
     }
 
     @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
+    public void onClick(View v) {
+        switch (v.getId()) {
             case R.id.settings:
                 openSettings();
                 break;
             case R.id.send:
-                sendBroadcastToAddFriendsWithMessage();
+                Button sendBtn = (Button) v;
+                if (sendBtn.getText().toString().equals(getResources().getString(R.string.start_add_friends_and_send_message))) {
+                    sendBroadcastToAddFriendsWithMessage();
+                    sendBtn.setText(R.string.stop_add_friends);
+                }else {
+                    sendBroadcastToStopFriendsWithMessage();
+                    sendBtn.setText(R.string.start_add_friends_and_send_message);
+                }
                 break;
             default:
                 break;
         }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+        if (v.getId() == R.id.message) {
+            showPopWindows();
+            return true;
+        }
+        return false;
     }
 
     private void openSettings(){
@@ -218,7 +242,65 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
         Intent intent = new Intent();
         intent.setAction("android.loy.lydia.start");
         intent.putExtra(Utils.MESSAGE_KEY, mEditText.getText().toString());
+        intent.putExtra(Utils.ADD_KEY, true);
         sendBroadcast(intent);
+    }
+
+    private void sendBroadcastToStopFriendsWithMessage(){
+        Intent intent = new Intent();
+        intent.setAction("android.loy.lydia.start");
+        intent.putExtra(Utils.MESSAGE_KEY, mEditText.getText().toString());
+        intent.putExtra(Utils.ADD_KEY, false);
+        sendBroadcast(intent);
+    }
+
+    /**
+     * Tpv loy.ouyang: show popWindow to paste in floatView
+     */
+    private void showPopWindows() {
+
+        ///TPV loy.ouyang: init pop view
+        View mPopView = LayoutInflater.from(mFloatView.getContext()).inflate(R.layout.tpv_copy_menu_layout, null);
+        final PopupWindow popWindow = new PopupWindow(mPopView, mPopWindowWidth, mPopWindowHeight);
+        ///TPV loy.ouyang: set background
+        popWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.tpv_pop_window_background));
+        popWindow.setFocusable(true);
+        popWindow.setOutsideTouchable(true);
+
+        int popWindowHeight = popWindow.getHeight();
+        int popWindowWidth = popWindow.getWidth();
+
+
+        ///TPV loy.ouyang: set show position
+        popWindow.showAtLocation(mEditText, Gravity.NO_GRAVITY, mEditText.getLeft() + mEditText.getWidth() - popWindowWidth, mEditText.getBottom() + popWindowHeight / 2);
+        popWindow.update();
+        TextView pasteView = (TextView) mPopView.findViewById(R.id.action);
+        pasteView.setText(android.R.string.paste);
+        pasteView.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                paste();
+                popWindow.dismiss();
+            }
+        });
+    }
+
+    private void paste() {
+        final ClipboardManager clipboard = (ClipboardManager) getApplicationContext()
+                .getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard == null){
+            return;
+        }
+        final ClipData primaryClip = clipboard.getPrimaryClip();
+        if (primaryClip != null) {
+            final ClipData.Item item = primaryClip.getItemCount() == 0 ? null : primaryClip.getItemAt(0);
+            if (item == null) {
+                // nothing to paste, bail early...
+                return;
+            }
+            mEditText.setText(item.coerceToText(getApplicationContext()));
+        }
     }
 
 
