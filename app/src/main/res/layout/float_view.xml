@@ -1,30 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:background="#8c8cfc"
-    tools:context="com.example.lydia.wechatautoaddfriends.MainActivity">
+    android:background="#8c8cfc">
 
+    <ImageButton
+        android:id="@+id/close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/icon_close"
+        android:padding="10dp"
+        android:background="#00ffffff"/>
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="5dp"
-        android:text="发送语句"
+        android:text="@string/message_title"
         android:textStyle="bold"
-        android:textSize="20dp" />
+        android:textSize="20dp"
+        android:textColor="#000000"
+        android:layout_gravity="center_horizontal"/>
 
-    <EditText
+    <com.example.lydia.wechatautoaddfriends.ClearEditText
         android:id="@+id/message"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/login_edittext_bg"
+        android:drawableEnd="@drawable/delete_selector"
         android:layout_margin="12dp"
-        android:letterSpacing="0.5"
         android:textAlignment="textStart"
-        android:textSize="20dp"
-        android:textStyle="bold"/>
+        android:textSize="12dp"
+        android:textColor="#000000"
+        android:hint="@string/clearedittext_hint_message"/>
 
     <Button
         android:id="@+id/send"
@@ -34,7 +42,8 @@
         android:background="@drawable/open_settings_button_background"
         android:padding="10dp"
         android:text="@string/start_add_friends_and_send_message"
-        android:textColor="#000000" />
+        android:textColor="#000000"
+        android:layout_gravity="center_horizontal"/>
     <Button
         android:id="@+id/settings"
         android:layout_width="wrap_content"
@@ -42,7 +51,8 @@
         android:layout_marginTop="30dp"
         android:background="@drawable/open_settings_button_background"
         android:padding="10dp"
-        android:text="点击前往开启自动添加友好服务"
-        android:textColor="#000000" />
+        android:text="@string/go_to_settings_start_add_friends_service"
+        android:textColor="#000000"
+        android:layout_gravity="center_horizontal"/>
 
 </LinearLayout>

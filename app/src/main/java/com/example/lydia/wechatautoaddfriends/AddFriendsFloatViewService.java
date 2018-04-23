@@ -2,11 +2,8 @@ package com.example.lydia.wechatautoaddfriends;
 
 import android.annotation.SuppressLint;
 import android.app.Service;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.PixelFormat;
@@ -21,8 +18,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.PopupWindow;
-import android.widget.TextView;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 
@@ -32,25 +28,22 @@ import android.widget.Toast;
  */
 
 @SuppressLint("Registered")
-public class AddFriendsFloatViewService extends Service implements View.OnClickListener, View.OnLongClickListener{
+public class AddFriendsFloatViewService extends Service implements View.OnClickListener{
     private final static String TAG = "AddFriendsFloatViewService";
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams wmParams;
-    ///TPV loy.ouyang: float view
+    /// loy.ouyang: float view
     private View mFloatView;
 
     private EditText mEditText;
 
-    ///TPV loy.ouyang: touch point in float view
+    /// loy.ouyang: touch point in float view
     private float mTouchStartX;
     private float mTouchStartY;
 
-    ///TPV loy.ouyang: real position of float view
+    /// loy.ouyang: real position of float view
     private float mX;
     private float mY;
-
-    private static final int mPopWindowWidth = 120;
-    private static final int mPopWindowHeight = 54;
 
 
     @Override
@@ -68,11 +61,11 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
     }
 
     /**
-     * Tpv loy.ouyang: init float view
+     *  loy.ouyang: init float view
      */
     private void init() {
 
-        ///TPV loy.ouyang: init float view
+        ///loy.ouyang: init float view
         LayoutInflater inflater = LayoutInflater.from(getApplication());
         if (inflater == null) {
             return;
@@ -84,31 +77,33 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
         Button settingsBtn = mFloatView.findViewById(R.id.settings);
         settingsBtn.setOnClickListener(this);
 
-        mEditText = mFloatView.findViewById(R.id.message);
-        mEditText.setOnLongClickListener(this);
+        ImageButton closeBtn = mFloatView.findViewById(R.id.close);
+        closeBtn.setOnClickListener(this);
 
-        ///TPV loy.ouyang: init window params
+        mEditText = mFloatView.findViewById(R.id.message);
+
+        /// loy.ouyang: init window params
         if (Build.VERSION.SDK_INT >= 26) {
             wmParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         }else {
             wmParams.type = WindowManager.LayoutParams.TYPE_PHONE;
         }
         wmParams.format = PixelFormat.RGBA_8888;
-        wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
+        wmParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         wmParams.gravity = Gravity.CENTER;
         wmParams.width = WindowManager.LayoutParams.WRAP_CONTENT;
         wmParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
         DisplayMetrics metrics = new DisplayMetrics();
-        ///TPV loy.ouyang: set default position
+        /// loy.ouyang: set default position
         mWindowManager.getDefaultDisplay().getMetrics(metrics);
     }
 
     /**
-     * Tpv loy.ouyang: add float view to window
+     *  loy.ouyang: add float view to window
      */
     private void addFloatView() {
-        ///TPV loy.ouyang: avoid add float view twice
+        /// loy.ouyang: avoid add float view twice
         if (mFloatView.getParent() != null)
             mWindowManager.removeView(mFloatView);
         mWindowManager.addView(mFloatView, wmParams);
@@ -159,12 +154,12 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
                     wmParams.x = (int) (event.getRawX() - mTouchStartX + mX);
                     wmParams.y = (int) (event.getRawY() - mTouchStartY + mY);
 
-                    ///TPV loy.ouyang: limit the max vertical and horizon move distance
+                    /// loy.ouyang: limit the max vertical and horizon move distance
                     DisplayMetrics metrics = new DisplayMetrics();
                     mWindowManager.getDefaultDisplay().getMetrics(metrics);
                     int maxX = metrics.widthPixels;
                     int minX = -mFloatView.getWidth();
-                    int maxY = metrics.heightPixels - 3 * getNavigationBarHeight();///TPV loy.ouyang: solve problem of can not move float view when under navigation bar
+                    int maxY = metrics.heightPixels - 3 * getNavigationBarHeight();/// loy.ouyang: solve problem of can not move float view when under navigation bar
                     int minY = -mFloatView.getHeight();
                     if (wmParams.x < minX) {
                         wmParams.x = minX;
@@ -178,7 +173,7 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
                     if (wmParams.y > maxY) {
                         wmParams.y = maxY;
                     }
-                    ///TPV---------------------------------------
+                    ///---------------------------------------
                     mWindowManager.updateViewLayout(mFloatView, wmParams);
                     break;
                 default:
@@ -189,7 +184,7 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
     };
 
     /**
-     * Tpv loy.ouyang: get virtual navigation height
+     *  loy.ouyang: get virtual navigation height
      */
     private int getNavigationBarHeight() {
         Resources resources = this.getResources();
@@ -213,26 +208,21 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
                     sendBtn.setText(R.string.start_add_friends_and_send_message);
                 }
                 break;
+            case R.id.close:
+                stopSelf();
+                break;
             default:
                 break;
         }
     }
 
-    @Override
-    public boolean onLongClick(View v) {
-        if (v.getId() == R.id.message) {
-            showPopWindows();
-            return true;
-        }
-        return false;
-    }
 
     private void openSettings(){
         try {
             //打开系统设置中辅助功能
             Intent intent = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
             startActivity(intent);
-            Toast.makeText(getApplicationContext(), "找到添加好友服务，然后开启服务即可", Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), "开启微信一键添加好友服务", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -254,59 +244,15 @@ public class AddFriendsFloatViewService extends Service implements View.OnClickL
         sendBroadcast(intent);
     }
 
-    /**
-     * Tpv loy.ouyang: show popWindow to paste in floatView
-     */
-    private void showPopWindows() {
-
-        ///TPV loy.ouyang: init pop view
-        View mPopView = LayoutInflater.from(mFloatView.getContext()).inflate(R.layout.tpv_copy_menu_layout, null);
-        final PopupWindow popWindow = new PopupWindow(mPopView, mPopWindowWidth, mPopWindowHeight);
-        ///TPV loy.ouyang: set background
-        popWindow.setBackgroundDrawable(getResources().getDrawable(R.drawable.tpv_pop_window_background));
-        popWindow.setFocusable(true);
-        popWindow.setOutsideTouchable(true);
-
-        int popWindowHeight = popWindow.getHeight();
-        int popWindowWidth = popWindow.getWidth();
-
-
-        ///TPV loy.ouyang: set show position
-        popWindow.showAtLocation(mEditText, Gravity.NO_GRAVITY, mEditText.getLeft() + mEditText.getWidth() - popWindowWidth, mEditText.getBottom() + popWindowHeight / 2);
-        popWindow.update();
-        TextView pasteView = (TextView) mPopView.findViewById(R.id.action);
-        pasteView.setText(android.R.string.paste);
-        pasteView.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                paste();
-                popWindow.dismiss();
-            }
-        });
-    }
-
-    private void paste() {
-        final ClipboardManager clipboard = (ClipboardManager) getApplicationContext()
-                .getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard == null){
-            return;
-        }
-        final ClipData primaryClip = clipboard.getPrimaryClip();
-        if (primaryClip != null) {
-            final ClipData.Item item = primaryClip.getItemCount() == 0 ? null : primaryClip.getItemAt(0);
-            if (item == null) {
-                // nothing to paste, bail early...
-                return;
-            }
-            mEditText.setText(item.coerceToText(getApplicationContext()));
-        }
-    }
-
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @Override
+    public void onDestroy() {
+        removeFloatView();
+        super.onDestroy();
     }
 }

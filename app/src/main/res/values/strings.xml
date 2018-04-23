@@ -4,4 +4,10 @@
     <string name="stop_add_friends">停止添加好友</string>
     <string name="start_add_friends_and_send_message">开始添加好友并发送信息</string>
     <string name="aler_window_permission_failed">请求悬浮窗权限失败</string>
+    <string name="go_to_settings_start_add_friends_service">点击前往开启微信一键添加好友服务</string>
+    <string name="message_title">发送语句</string>
+    <string name="clearedittext_hint_message">请输入需要发送的消息。。。</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_clear_edit_text">ClearEditText</string>
 </resources>

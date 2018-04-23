@@ -3,9 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/WeChatAutoAddFriends.iml" filepath="$PROJECT_DIR$/WeChatAutoAddFriends.iml" />
-      <module fileurl="file://D:\android_develop\android_projects\WeChatAutoAddFriends\WeChatAutoAddFriends.iml" filepath="D:\android_develop\android_projects\WeChatAutoAddFriends\WeChatAutoAddFriends.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://D:\android_develop\android_projects\WeChatAutoAddFriends\app\app.iml" filepath="D:\android_develop\android_projects\WeChatAutoAddFriends\app\app.iml" />
     </modules>
   </component>
 </project>
