@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -45,6 +46,7 @@ public class AutoAddFriendsService extends AccessibilityService {
         Log.d(TAG, "==============Start==================== type: " + eventType);
         switch (eventType) {
             case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
+                Log.d(TAG, "onAccessibilityEvent: AutoAddFriendsService");
                 nodeInfo = getRootInActiveWindow();
                 if (nodeInfo == null || !ADD) {
                     return;
@@ -52,6 +54,7 @@ public class AutoAddFriendsService extends AccessibilityService {
                 String windowClassName = event.getClassName().toString();
                 Log.d(TAG, "window type changed: " + windowClassName);
                 if ("com.tencent.mm.ui.LauncherUI".equals(windowClassName)) {
+                    Log.d(TAG, "onAccessibilityEvent: 1");
                     jumpToAddNewFriends();
                 }
                 if ("com.tencent.mm.plugin.subapp.ui.friend.FMessageConversationUI".equals(windowClassName)) {
@@ -115,9 +118,13 @@ public class AutoAddFriendsService extends AccessibilityService {
      */
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     private void jumpToAddNewFriends() {
+        if (nodeInfo == null){
+            return;
+        }
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
+//                List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/iq");
                 List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/j8");
                 if (accessibilityNodeInfoList != null && accessibilityNodeInfoList.size() != 0) {
                     AccessibilityNodeInfo accessibilityNodeInfo = accessibilityNodeInfoList.get(0);
@@ -143,6 +150,13 @@ public class AutoAddFriendsService extends AccessibilityService {
         List<AccessibilityNodeInfo> acceptList = nodeInfo.findAccessibilityNodeInfosByText(ACCEPT_ADD_FRIEND_TEXT_KEY);
         if (!acceptList.isEmpty()) {
             acceptList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        }else {
+//            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8p");
+            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8u");
+
+            listView.get(0).performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+            nodeInfo = getRootInActiveWindow();
+            acceptAddFriends();
         }
     }
 
