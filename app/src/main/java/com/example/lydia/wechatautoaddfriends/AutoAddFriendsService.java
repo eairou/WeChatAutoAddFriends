@@ -54,7 +54,6 @@ public class AutoAddFriendsService extends AccessibilityService {
                 String windowClassName = event.getClassName().toString();
                 Log.d(TAG, "window type changed: " + windowClassName);
                 if ("com.tencent.mm.ui.LauncherUI".equals(windowClassName)) {
-                    Log.d(TAG, "onAccessibilityEvent: 1");
                     jumpToAddNewFriends();
                 }
                 if ("com.tencent.mm.plugin.subapp.ui.friend.FMessageConversationUI".equals(windowClassName)) {
@@ -124,8 +123,8 @@ public class AutoAddFriendsService extends AccessibilityService {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-//                List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/iq");
-                List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/j8");
+                List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/iq");
+//                List<AccessibilityNodeInfo> accessibilityNodeInfoList = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/j8");
                 if (accessibilityNodeInfoList != null && accessibilityNodeInfoList.size() != 0) {
                     AccessibilityNodeInfo accessibilityNodeInfo = accessibilityNodeInfoList.get(0);
                     if (accessibilityNodeInfo != null) {
@@ -151,12 +150,14 @@ public class AutoAddFriendsService extends AccessibilityService {
         if (!acceptList.isEmpty()) {
             acceptList.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
         }else {
-//            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8p");
-            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8u");
+            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8p");
+//            List<AccessibilityNodeInfo> listView = nodeInfo.findAccessibilityNodeInfosByViewId("com.tencent.mm:id/b8u");
 
-            listView.get(0).performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-            nodeInfo = getRootInActiveWindow();
-            acceptAddFriends();
+            boolean isPerformedScroll = listView.get(0).performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
+            if (isPerformedScroll) {
+                nodeInfo = getRootInActiveWindow();
+                acceptAddFriends();
+            }
         }
     }
 
